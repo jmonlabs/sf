@@ -1,0 +1,11 @@
+import * as core from "npm:spessasynth_core@4.3.22";
+const bytes = await Deno.readFile("MuseScore_General.sf3");
+const bank = core.SoundBankLoader.fromArrayBuffer(bytes.buffer);
+const keep = new Set([0, 8, 16, 24, 25, 32, 40, 48]);
+for (const p of [...bank.presets]) if (!(p.isGMGSDrum && keep.has(p.program))) bank.deletePreset(p);
+bank.removeUnusedElements();
+console.log("presets", bank.presets.map(p => `${p.program}:${p.name}`).join(" | "), "samples", bank.samples.length);
+const out = await bank.writeSF2({ compress: false });
+const buf = out instanceof ArrayBuffer ? new Uint8Array(out) : new Uint8Array(out.buffer ?? out);
+await Deno.writeFile("drums.sf3", buf);
+console.log("size MB", (buf.length / 1e6).toFixed(1));
